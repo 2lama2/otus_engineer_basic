@@ -1,7 +1,8 @@
 ## Базовая настройка коммутатора
 #### 1. Создание сети и проверка настроек коммутатора по умолчанию
 ##### a. Создаем сетевую топологию в EVE-NG
-![Pasted image 20220423183710.png](/pics/"Pasted image 20220423183710.png")
+
+![pic](https://github.com/2lama2/otus_engineer_basic/pics/Pasted%20image%2020220423183710.png)
 
 ![[Pasted image 20220423183710.png]]
 ##### Таблица адресации
