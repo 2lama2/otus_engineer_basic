@@ -2,7 +2,7 @@
 #### 1. Создание сети и проверка настроек коммутатора по умолчанию
 ##### a. Создаем сетевую топологию в EVE-NG
 
-![pics](https://github.com/2lama2/otus_engineer_basic/pics/Pasted%20image%2020220423183710.png)
+![pics](https://github.com/2lama2/otus_engineer_basic/blob/71382676494d5bf717472fe1544ac9320c0188c3/pics/Pasted%20image%2020220423183710.png)
 
 
 ![[Pasted image 20220423183710.png]]
