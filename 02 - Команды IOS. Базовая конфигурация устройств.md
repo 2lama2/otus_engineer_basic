@@ -173,7 +173,11 @@ VLAN | Type | SAID | MTU | Parent | RingNo | BridgeNo | Stp | BrdgMode | Trans1 
 #### 3. Проверка сетевых подключений
 ##### 1. Отображение конфигурации коммутатора
 
->S1#show running-config
+<details><summary> S1#show running-config</summary>
+<p>
+	
+```
+S1#show running-config
 Building configuration...
 Current configuration : 1078 bytes
 !
@@ -270,7 +274,11 @@ line vty 0 4
 !
 !
 end
+```
 
+</p>
+</details>
+	
 Проверим параметры VLAN 1:
 
 >S1#**show interfaces vlan 1**
