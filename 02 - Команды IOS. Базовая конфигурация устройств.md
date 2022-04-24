@@ -110,22 +110,22 @@ VPC | NIC | 192.168.1.10/24
 
 	```
 	Switch#show vlan name default
-
-		VLAN | Name | Status | Ports
-		:----:|:------:|:-------:|:------:
-		1 | default | active | Fa0/1, Fa0/2, Fa0/3, Fa0/4
- 		| | | | Fa0/5, Fa0/6, Fa0/7, Fa0/8
- 		| | | | Fa0/9, Fa0/10, Fa0/11, Fa0/12
- 		| | | | Fa0/13, Fa0/14, Fa0/15, Fa0/16
- 		| | | | Fa0/17, Fa0/18, Fa0/19, Fa0/20
- 		| | | | Fa0/21, Fa0/22, Fa0/23, Fa0/24
- 		| | | | Gig0/1, Gig0/2
+	```
+	
+	VLAN | Name | Status | Ports
+	:----:|:------:|:-------:|:------:
+	1 | default | active | Fa0/1, Fa0/2, Fa0/3, Fa0/4
+ 	| | | | Fa0/5, Fa0/6, Fa0/7, Fa0/8
+ 	| | | | Fa0/9, Fa0/10, Fa0/11, Fa0/12
+ 	| | | | Fa0/13, Fa0/14, Fa0/15, Fa0/16
+ 	| | | | Fa0/17, Fa0/18, Fa0/19, Fa0/20
+ 	| | | | Fa0/21, Fa0/22, Fa0/23, Fa0/24
+ 	| | | | Gig0/1, Gig0/2
 
 	VLAN | Type | SAID | MTU | Parent | RingNo | BridgeNo | Stp | BrdgMode | Trans1 | Trans2
 	:----:|:-----:|:----:|:---:|:----:|:-----:|:----:|:---:|:----:|:-----:|:----:
 	1 | enet | 100001 | 1500 | - | - | - | - | - | 0 | 0
-	```
-	
+		
 	Из вывода команды следует, что сетью по умолчанию является сеть VLAN 1 и она имеет имя **`default`**. Данная сеть является сетью Ethernet, является активной и включает в себя все порты коммутатора.
 
 *	Просмотреть содержимое каталога или устройства хранения данных можно с помощь команды **`show DIRNAME`**, где DIRNAME - это имя устройства или каталог. Например, посмотреть содержимое флэш-памяти можно командой:
@@ -141,60 +141,74 @@ VPC | NIC | 192.168.1.10/24
 #### 2. Настройка базовых параметров сетевых устройств
 Настройку будем проводить в EVE-NG.
 
-##### 1. Настройка базовых параметров коммутатора
-* Перейдем в привилегированный режим выполнения команд EXEC, затем перейдем в режим глобальной конфигурации:
+#####	a.	Настройка базовых параметров коммутатора
+*	Перейдем в привилегированный режим выполнения команд EXEC, затем перейдем в режим глобальной конфигурации:
 
->Switch>**enable**
->Switch#**configure terminal**
->Switch(config)#
+	```
+	Switch>enable
+	Switch#configure terminal
+	Switch(config)#
+	```
 
-* Далее выполним базовые команды настройки коммутатора:
+*	Далее выполним базовые команды настройки коммутатора:
 
->Switch(config)#**no ip domain-lookup**
->Switch(config)#**hostname S1**
->S1(config)#**service password-encryption**
->S1(config)#**enable secret class**
->S1(config)#**banner motd #**
-**Unauthorized access is strictly prohibited. #**
+	```
+	Switch(config)#no ip domain-lookup
+	Switch(config)#hostname S1
+	S1(config)#service password-encryption
+	S1(config)#enable secret class
+	S1(config)#banner motd #
+	Unauthorized access is strictly prohibited. #
+	```
 
-* Назначим виртуальному интерфейсу коммутатора IP-адрес для возможности подключения к коммутатору и конфигурирования его по сети:
+*	Для возможности подключения к коммутатору и конфигурирования его по сети, назначим виртуальному интерфейсу коммутатора IP-адрес :
 
->S1(config)#**interface vlan 1**
->S1(config)#**ip address 192.168.1.2 255.255.255.0**
+	```
+	S1(config)#interface vlan 1
+	S1(config)#ip address 192.168.1.2 255.255.255.0
+	```
+	
+*	Для того, чтобы коммутатор разрешил доступ к виртуальной консоли через Telnet, настроим каналы виртуального соединения (vty). Если не настроить пароль VTY, будет невозможно подключиться к коммутатору по протоколу Telnet, SSH или другим разрешенным сетевым протоколам.
 
-* Настроим каналы виртуального соединения (vty) для удаленного управления, чтобы коммутатор разрешил доступ через Telnet. Если не настроить пароль VTY, будет невозможно подключиться к коммутатору по протоколу Telnet.
+	```
+	S1(config)#line vty 0 4
+	S1(config-line)#password cisco
+	S1(config-line)#login
+	S1(config-line)#transport input telnet
+	```
 
->S1(config)#**line vty 0 4**
->S1(config-line)#**password cisco**
->S1(config-line)#**login**
->S1(config-line)#**transport input telnet**
+*	Настроим парольный доступ к консольному подключению:
 
-* Настроим парольный доступ к консольному подключению:
+	```
+	S1(config)#line console 0
+	S1(config-line)#password cisco
+	S1(config-line)#login
+	```
 
->S1(config)#**line console 0**
->S1(config-line)#**password cisco**
->S1(config-line)#**login**
+	Для удобства работы в консоли включим параметр:
 
-Для удобства работы в консоли включим параметр:
+	```
+	S1(config-line)#logging synchronous
+	```
 
->S1(config-line)#**logging synchronous**
+*	Сохраним конфигураию копированием текущей (running) в загрузочную (startup):
 
-* Сохраним конфигураию копированием текущей (running) в загрузочную (startup):
+	```
+	S1#copy running-config startup-config
+	```
 
->S1#**copy running-config startup-config**
+#####	b. Настройка IP-адреса на компьютере VPC
 
-##### 2. Настройка IP-адреса на компьютере PC-A
-
->VPCS> **ip 192.168.1.10 255.255.255.0**
->VPCS> **show ip**
->NAME        : VPCS[1]
->IP/MASK     : 192.168.1.10/24
->GATEWAY     : 255.255.255.0
->DNS         :
->MAC         : 00:50:79:66:68:02
+	VPC> ip 192.168.1.10 255.255.255.0
+	VPC> show ip
+	NAME        : VPC
+	IP/MASK     : 192.168.1.10/24
+	GATEWAY     : 255.255.255.0
+	DNS         :
+	MAC         : 00:50:79:66:68:02
 
 #### 3. Проверка сетевых подключений
-##### 1. Отображение конфигурации коммутатора
+#####	a.	Отображение конфигурации коммутатора
 
 <details><summary> S1#show running-config</summary>
 <p>
@@ -304,36 +318,38 @@ end
 
 Проверим параметры VLAN 1:
 
->S1#**show interfaces vlan 1**
->Vlan1 **is up**, line protocol **is up**
->  Hardware is Ethernet SVI, address is aabb.cc80.1000 (bia aabb.cc80.1000)
->  Internet address is 192.168.1.2/24
->  MTU 1500 bytes, **BW 1000000 Kbit/sec**, DLY 10 usec,
->      reliability 255/255, txload 1/255, rxload 1/255
->  Encapsulation ARPA, loopback not set
->  Keepalive not supported
->  ARP type: ARPA, ARP Timeout 04:00:00
+	S1#show interfaces vlan 1
+	Vlan1 is up, line protocol is up
+	  Hardware is Ethernet SVI, address is aabb.cc80.1000 (bia aabb.cc80.1000)
+	  Internet address is 192.168.1.2/24
+	  MTU 1500 bytes, BW 1000000 Kbit/sec, DLY 10 usec,
+	      reliability 255/255, txload 1/255, rxload 1/255
+	  Encapsulation ARPA, loopback not set
+	  Keepalive not supported
+	  ARP type: ARPA, ARP Timeout 04:00:00
+		
+#####	b.	Проверка сквозного соединения с помощью ЭХО-запроса
 
-##### 2. Проверка сквозного соединения с помощью ЭХО-запроса
+	VPC> ping 192.168.1.10
+	
+	192.168.1.10 icmp_seq=1 ttl=64 time=0.001 ms
+	192.168.1.10 icmp_seq=2 ttl=64 time=0.001 ms
+	192.168.1.10 icmp_seq=3 ttl=64 time=0.001 ms
+	192.168.1.10 icmp_seq=4 ttl=64 time=0.001 ms
+	192.168.1.10 icmp_seq=5 ttl=64 time=0.001 ms
+	
+	VPC> ping 192.168.1.2
+	
+	84 bytes from 192.168.1.2 icmp_seq=1 ttl=255 time=0.317 ms
+	84 bytes from 192.168.1.2 icmp_seq=2 ttl=255 time=0.345 ms
+	84 bytes from 192.168.1.2 icmp_seq=3 ttl=255 time=0.315 ms
+	84 bytes from 192.168.1.2 icmp_seq=4 ttl=255 time=0.434 ms
+	84 bytes from 192.168.1.2 icmp_seq=5 ttl=255 time=0.485 ms
 
->VPCS> **ping 192.168.1.10**
->
->192.168.1.10 icmp_seq=1 ttl=64 time=0.001 ms
->192.168.1.10 icmp_seq=2 ttl=64 time=0.001 ms
->192.168.1.10 icmp_seq=3 ttl=64 time=0.001 ms
->192.168.1.10 icmp_seq=4 ttl=64 time=0.001 ms
->192.168.1.10 icmp_seq=5 ttl=64 time=0.001 ms
-
->VPCS> ping 192.168.1.2
->
->84 bytes from 192.168.1.2 icmp_seq=1 ttl=255 time=0.317 ms
->84 bytes from 192.168.1.2 icmp_seq=2 ttl=255 time=0.345 ms
->84 bytes from 192.168.1.2 icmp_seq=3 ttl=255 time=0.315 ms
->84 bytes from 192.168.1.2 icmp_seq=4 ttl=255 time=0.434 ms
->84 bytes from 192.168.1.2 icmp_seq=5 ttl=255 time=0.485 ms
-
-##### 3. Проверка доступности коммутатора  по сети
+#####	c.	Проверка доступности коммутатора  по сети
 Проверим доступность коммутатора по протоколу telnet, добавив еще одну виртуальную машину с адресом 192.168.1.20 в топологию EVE-NG:
+
+![pics](https://github.com/2lama2/otus_engineer_basic/blob/71382676494d5bf717472fe1544ac9320c0188c3/pics/Pasted%20image%2020220424000328.png)
 
 ![[Pasted image 20220424000328.png]]
 
@@ -341,5 +357,5 @@ end
 1. Зачем необходимо настраивать пароль VTY для коммутатора?
 	>Без задания пароля для виртуальных линий невозможно включить сервисы TELNET или SSH.
 2. Что нужно сделать, чтобы пароли не отправлялись в незашифрованном виде?
-	>Для предотвращения передачи пароля в открытом виде при удаленном подключении к комутатору, необходимо использовать службу SSH. Службу TELNET не разрешать для использования.
+	>Для предотвращения передачи пароля в открытом виде при удаленном подключении к комутатору необходимо использовать службу SSH. Службу TELNET не разрешать для использования.
 
