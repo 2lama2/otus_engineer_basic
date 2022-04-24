@@ -1,123 +1,142 @@
 ## Базовая настройка коммутатора
 #### 1. Создание сети и проверка настроек коммутатора по умолчанию
-##### a. Создаем сетевую топологию в EVE-NG
+#####	a. Создаем сетевую топологию в EVE-NG
 
 ![pics](https://github.com/2lama2/otus_engineer_basic/blob/71382676494d5bf717472fe1544ac9320c0188c3/pics/Pasted%20image%2020220423183710.png)
 
-
 ![[Pasted image 20220423183710.png]]
-##### Таблица адресации
+	
+**Таблица адресации**
 **Устройство** | **Интерфейс** | **IP-адрес/префикс**
 :---:|:---:|:---:
- SW | VLAN1 | 192.168.1.2/24
+SW | VLAN1 | 192.168.1.2/24
 VPC | NIC | 192.168.1.10/24
 
 Для первоначальной настройки коммутатора необходимо использовать консольное подключение, т.к. по умолчанию доступ к коммутатору по сети не настроен. Для эмуляции консольного подключения к устройствам в EVE-NG диспользуется ПО Putty.
 
-##### b. Проверка настройки коммутатора по умолчанию
+#####	b. Проверка настройки коммутатора по умолчанию
 
 * В EVE-NG используем следующий образ операционной системы коммутатора:
 
-```
-Cisco IOS Software, Linux Software (I86BI_LINUXL2-IPBASEK9-M), Experimental Version 15.2(20170809:194209) [dstivers-aug9_2017-high_iron_cts 101]
-```
+		Cisco IOS Software, Linux Software (I86BI_LINUXL2-IPBASEK9-M), Experimental Version 15.2(20170809:194209) [dstivers-aug9_2017-high_iron_cts 101]
 
-* Перейдем в привилегированный режим **`EXEC`** с помощью комманды **`enable`** и выведем информацию из текущей конфигурации об интерфейсах коммутатора:
+*	Перейдем в привилегированный режим **`EXEC`** с помощью комманды **`enable`** и выведем информацию из текущей конфигурации об интерфейсах коммутатора:
 
-```
-Switch#show running-config | section interface
-interface Ethernet0/0
-interface Ethernet0/1
-interface Ethernet0/2
-interface Ethernet0/3
-```
+	```
+	Switch#show running-config | section interface
+	interface Ethernet0/0
+	interface Ethernet0/1
+	interface Ethernet0/2
+	interface Ethernet0/3
+	```
 
-а также о линиях управления и их настройках по умолчанию:
+	а также о линиях управления и их настройках по умолчанию:
 
->Switch#**show run | section line**
->line con 0
-> logging synchronous
->line aux 0
->line vty 0 4
+	```
+	Switch#show run | section line
+	line con 0
+ 	  logging synchronous
+	line aux 0
+	line vty 0 4
+	```
 
-* При настройках коммутатора по умолчанию или при сбросе к заводским настройкам, файл параметров загрузочной конфигурации **`startup-config`** будет пустым, в чем убедимся, выполнив команду:
+*	При настройках коммутатора по умолчанию или при сбросе к заводским настройкам, файл параметров загрузочной конфигурации **`startup-config`** будет пустым, в чем убедимся, выполнив команду:
 
->Switch#**show startup-config**
->startup-config is not present
+	```
+	Switch#show startup-config
+	startup-config is not present
+	```
 
-* В EVE-NG для выбранного образа коммутатора по умолчанию не настраивается виртуальный интерфейс коммутатора. Поэтому для примера рассмотрим настройки по умолчанию в ПО Packet Tracer (далее PT) для коммутатора 2960:
+*	В EVE-NG для выбранного образа коммутатора по умолчанию не настраивается виртуальный интерфейс коммутатора. Поэтому, для примера рассмотрим настройки по умолчанию в ПО Packet Tracer (далее PT) для коммутатора 2960:
 
->Switch#**show run | section interface**
->interface Vlan1
-> no ip address
-> shutdown
+	```
+	Switch#show run | section interface
+	interface Vlan1
+	 no ip address
+	 shutdown
+	 ```
 
-Конфигурация говорит нам, что создан интерфейс **`Vlan1`**. Он находится в выключенном состоянии и ему не назначен IP-адрес:
+	Конфигурация говорит нам, что создан интерфейс **`Vlan1`**. Он находится в выключенном состоянии и ему не назначен IP-адрес:
 
->Switch#**show ip interface vlan 1**
->Vlan1 is administratively down, line protocol is down
->  Internet protocol processing disabled
+	```
+	Switch#show ip interface vlan 1
+	Vlan1 is administratively down, line protocol is down
+	  Internet protocol processing disabled
+	```
 
-Посмотрим дополнительную информацию об интерфейсе **`Vlan1`**:
+	Посмотрим дополнительную информацию об интерфейсе **`Vlan1`**:
 
->Switch#**show interface vlan 1**
->Vlan1 is administratively down, line protocol is down
->  Hardware is *__CPU Interface__*, address is *__0001.6469.b22e__* (bia 0001.6469.b22e)
->  ..............
+	```
+	Switch#show interface vlan 1
+	Vlan1 is administratively down, line protocol is down
+	  Hardware is CPU Interface, address is 0001.6469.b22e (bia 0001.6469.b22e)
+	  ..............
+	```
+	
+	Данный интерфейс является виртуальным и ему назначен определенный MAC-адрес.
 
-Данный интерфейс является виртуальным и ему назначен определенный MAC-адрес.
+*	При подключении нового устройства в порт коммутатора, на консоли наблюдаем информационные сообщения об изменении статуса порта:
 
-* При подключении нового устройства в порт коммутатора на консоли наблюдаем информационные сообщения об изменении статуса порта:
+	```
+	Switch#
+	%LINK-5-CHANGED: Interface FastEthernet0/6, changed state to up
+	%LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/6, changed state to up
+	```
+	
+*	Чтобы узнать информацию о версии ОС коммутатора, выполним команду **`show version`:**
 
->Switch#
->%LINK-5-CHANGED: Interface FastEthernet0/6, changed state to up
->%LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/6, changed state to up
+	Switch | Ports | Model | SW Version | SW Image
+	:------:|:-----:|:-----:|:----------:|:----------:
+	1 | 26 | WS-C2960-24TT-L| 15.0(2)SE4 | C2960-LANBASEK9-M
+	
+	```
+	......................
+	Base ethernet MAC Address : 00:01:64:69:B2:2E
+	```
+	
+*	Чтобы узнать информацию о конкретном интерфейсе используем следующую команду:
 
-- Чтобы узнать информацию о версии ОС коммутатора, выполним команду **`show version`:**
+	```
+	Switch#show interfaces f0/6
+	FastEthernet0/6 is up, line protocol is up (connected)
+	  Hardware is Lance, address is 0060.5ca9.5106 (bia 0060.5ca9.5106)
+	  ....................
+	  Full-duplex, 100Mb/s
+	```
 
-Switch | Ports | Model | SW Version | SW Image
-:------:|:-----:|:-----:|:----------:|:----------:
-1 | 26 | WS-C2960-24TT-L| 15.0(2)SE4 | C2960-LANBASEK9-M
->......................
->Base ethernet **MAC Address** : 00:01:64:69:B2:2E
+	В данном случае порт включен, работает в режиме full-duplex на скорости 100Mb/s. Если порт нужно отключить, то используется команда **`shutdown`**. Из выключенного состояния во включенное порт переводится командой **`no shutdown`**.
 
-* Чтобы узнать информацию о конкретном интерфейсе используем следующую команду:
+*	Изучим настройки по умолчанию для сети VLAN 1:
 
->Switch#**show interfaces f0/6**
->FastEthernet0/6 is** **up**, line protocol is **up (connected)**
->  Hardware is Lance, address is 0060.5ca9.5106 (bia 0060.5ca9.5106)
->  ....................
->  **Full-duplex**, **100Mb/s**
+	```
+	Switch#show vlan name default
 
-В данном случае порт включен, работает в режиме full-duplex на скорости 100Mb/s. Если порт нужно отключить, то используется команда **`shutdown`**. Из выключенного состояния во включенное порт переводится командой **`no shutdown`**.
+		VLAN | Name | Status | Ports
+		:----:|:------:|:-------:|:------:
+		1 | default | active | Fa0/1, Fa0/2, Fa0/3, Fa0/4
+ 		| | | | Fa0/5, Fa0/6, Fa0/7, Fa0/8
+ 		| | | | Fa0/9, Fa0/10, Fa0/11, Fa0/12
+ 		| | | | Fa0/13, Fa0/14, Fa0/15, Fa0/16
+ 		| | | | Fa0/17, Fa0/18, Fa0/19, Fa0/20
+ 		| | | | Fa0/21, Fa0/22, Fa0/23, Fa0/24
+ 		| | | | Gig0/1, Gig0/2
 
-* Изучим настройки по умолчанию для сети VLAN 1:
+	VLAN | Type | SAID | MTU | Parent | RingNo | BridgeNo | Stp | BrdgMode | Trans1 | Trans2
+	:----:|:-----:|:----:|:---:|:----:|:-----:|:----:|:---:|:----:|:-----:|:----:
+	1 | enet | 100001 | 1500 | - | - | - | - | - | 0 | 0
+	```
+	
+	Из вывода команды следует, что сетью по умолчанию является сеть VLAN 1 и она имеет имя **`default`**. Данная сеть является сетью Ethernet, является активной и включает в себя все порты коммутатора.
 
->Switch#**show vlan name default**
+*	Просмотреть содержимое каталога или устройства хранения данных можно с помощь команды **`show DIRNAME`**, где DIRNAME - это имя устройства или каталог. Например, посмотреть содержимое флэш-памяти можно командой:
 
-VLAN | Name | Status | Ports
-:----:|:------:|:-------:|:------:
-1 | default | active | Fa0/1, Fa0/2, Fa0/3, Fa0/4
- | | | | Fa0/5, Fa0/6, Fa0/7, Fa0/8
- | | | | Fa0/9, Fa0/10, Fa0/11, Fa0/12
- | | | | Fa0/13, Fa0/14, Fa0/15, Fa0/16
- | | | | Fa0/17, Fa0/18, Fa0/19, Fa0/20
- | | | | Fa0/21, Fa0/22, Fa0/23, Fa0/24
- | | | | Gig0/1, Gig0/2
+	```
+	Switch#show flash
+	Directory of flash:/
+	1 -rw- 4670455 <no date> 2960-lanbasek9-mz.150-2.SE4.bin
+	```
 
-VLAN | Type | SAID | MTU | Parent | RingNo | BridgeNo | Stp | BrdgMode | Trans1 | Trans2
-:----:|:-----:|:----:|:---:|:----:|:-----:|:----:|:---:|:----:|:-----:|:----:
-1 | enet | 100001 | 1500 | - | - | - | - | - | 0 | 0
-
-Из вывода команды следует, что сетью по умолчанию является сеть VLAN 1 и она имеет имя **`default`**. Данная сеть является сетью Ethernet, является активной и включает в себя все порты коммутатора.
-
-* Просмотреть содержимое каталога или устройства хранения данных можно с помощь команды **`show DIRNAME`**, где DIRNAME - это имя устройства или каталог. Например, посмотреть содержимое флэш-памяти можно командой:
-
->Switch#**show flash**
->Directory of flash:/
->1 -rw- 4670455 `<no date>` **2960-lanbasek9-mz.150-2.SE4.bin**
-
-На данном устройстве хранится образ ОС CISCO IOS.
+	На данном устройстве хранится образ ОС CISCO IOS **2960-lanbasek9-mz.150-2.SE4.bin**.
 
 #### 2. Настройка базовых параметров сетевых устройств
 Настройку будем проводить в EVE-NG.
