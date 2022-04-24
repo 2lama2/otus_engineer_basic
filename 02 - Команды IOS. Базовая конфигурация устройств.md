@@ -18,15 +18,19 @@ VPC | NIC | 192.168.1.10/24
 
 * В EVE-NG используем следующий образ операционной системы коммутатора:
 
->Cisco IOS Software, Linux Software (I86BI_LINUXL2-IPBASEK9-M), Experimental Version 15.2(20170809:194209) [dstivers-aug9_2017-high_iron_cts 101]
+```
+Cisco IOS Software, Linux Software (I86BI_LINUXL2-IPBASEK9-M), Experimental Version 15.2(20170809:194209) [dstivers-aug9_2017-high_iron_cts 101]
+```
 
 * Перейдем в привилегированный режим **`EXEC`** с помощью комманды **`enable`** и выведем информацию из текущей конфигурации об интерфейсах коммутатора:
 
->Switch#**show running-config | section interface**
->interface Ethernet0/0
->interface Ethernet0/1
->interface Ethernet0/2
->interface Ethernet0/3
+```
+Switch#show running-config | section interface
+interface Ethernet0/0
+interface Ethernet0/1
+interface Ethernet0/2
+interface Ethernet0/3
+```
 
 а также о линиях управления и их настройках по умолчанию:
 
