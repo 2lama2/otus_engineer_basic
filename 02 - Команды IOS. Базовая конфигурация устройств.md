@@ -192,7 +192,7 @@ VPC | NIC | 192.168.1.10/24
 	S1(config-line)#logging synchronous
 	```
 
-*	Сохраним конфигураию копированием текущей (running) в загрузочную (startup):
+*	Сохраним конфигурацию копированием текущей (running) в загрузочную (startup):
 
 	```
 	S1#copy running-config startup-config
