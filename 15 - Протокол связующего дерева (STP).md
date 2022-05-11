@@ -3,6 +3,8 @@
 #### Топология
 
 ![[Pasted image 20220508120131.png]]
+
+![pics](https://github.com/2lama2/otus_engineer_basic/blob/4bcde14a674123dc046b6e91a2cc5c762ab8b899/pics/Pasted%20image%2020220503225650.png)
 #### Таблица адресации
 
 | **Устройство** | **Интерфейс** | **IP-адрес** | **Маска подсети** |
