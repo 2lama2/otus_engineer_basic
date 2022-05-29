@@ -3,7 +3,7 @@
 #### Топология
 
 ![[Pasted image 20220515152132.png]]
-#### Таблица адресации
+#### Таблица адесации
 <table>
 <thead>
   <tr>
@@ -153,7 +153,7 @@
 	```
 
 ### 2. Проверка назначения адреса SLAAC от R1
-* Настроим на хосте **`Linux1`** сетевой интерфейс для использования протокола IPv6 в режиме автосонфигурации (SLAAC):
+* Настроим на хосте **`Linux1`** сетевой интерфейс для использования протокола IPv6 в режиме автоконфигурации (SLAAC):
 
 	```
 	root@Linux1:~# cat /etc/network/interfaces
@@ -189,103 +189,236 @@
 	- создадим пул:
 
 	```
-	R1(config)#ipv6 dhcp pool R1-STATELESS
+	R1(config)# ipv6 dhcp pool R1-STATELESS
 	```
 
 	- зададим имя DNS-сервера и доменный суффикс:
 
 	```
-	R1(config-dhcpv6)#dns-server 2001:db8:acad::254
+	R1(config-dhcpv6)# dns-server 2001:db8:acad::254
 	
-	R1(config-dhcpv6)#domain-name STATELESS.com
+	R1(config-dhcpv6)# domain-name STATELESS.com
 	```
 
 	- на интерфейсе, смотрящем в клиентский сегмент, настроим параметры сообщения **`RA`** протокола **`ICMPv6`** так, чтобы клиенты для автоконфигурации IPv6 обращались на DHCP-сервер за дополнительными настройками (устанавим флаг **`O`**):
 
 	```
-	R1(config-dhcpv6)#int e0/0
+	R1(config-dhcpv6)# int e0/0
 	
-	R1(config-if)#ipv6 nd other-config-flag
+	R1(config-if)# ipv6 nd other-config-flag
 	
-	R1(config-if)#ipv6 dhcp server R1-STATELESS
-	
-	```
-
-	* Проверим вновь полученные параметры автоконфигурации на клиенте Linux1 после перезагрузки:
-
-	```
+	R1(config-if)# ipv6 dhcp server R1-STATELESS
 	
 	```
 
+* Проверим вновь полученные параметры автоконфигурации на клиенте **`Linux1`** после перезагрузки:
 
-
-
-* На стороне клиента Linux2 проверим автоконфигурацию сетевого интерфейса и доступность шлюза по умолчанию:
+	1. конфигурация интерфейса в режиме DHCP без сохранения состояния (метод **`auto`**, параметр **`dhcp 1`**):
 
 	```
-	root@Linux2:~# ip r
-	
-	default via 192.168.1.97 dev ens3 
-	192.168.1.96/28 dev ens3 proto kernel scope link src 192.168.1.103 
-	
-	root@Linux2:~# ip a
+	root@Linux1:~# cat /etc/network/interfaces
 	......
-	2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
-	    link/ether 00:50:00:00:02:00 brd ff:ff:ff:ff:ff:ff
-	    inet 192.168.1.103/28 brd 192.168.1.111 scope global dynamic ens3
-	       valid_lft 132473sec preferred_lft 132473sec
-	......
-	root@Linux2:~# ping 192.168.1.97
+	allow-hotplug ens3
+	iface ens3 inet6 auto
+	dhcp 1
+	accept_ra 1
+	```
+
+	2. IPv6-сформирован полученным от маршрутизатора префиксом сети и сгенерированным методом EUI-64 идентификатором интерфейса:
+
+	```
+	root@Linux1:~# ip -6 a
 	
-	PING 192.168.1.97 (192.168.1.97) 56(84) bytes of data.
-	64 bytes from 192.168.1.97: icmp_seq=1 ttl=255 time=0.437 ms
-	64 bytes from 192.168.1.97: icmp_seq=2 ttl=255 time=0.654 ms
-	64 bytes from 192.168.1.97: icmp_seq=3 ttl=255 time=0.725 ms
+	1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 state UNKNOWN qlen 1000
+	    inet6 ::1/128 scope host 
+	       valid_lft forever preferred_lft forever
+	2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 state UP qlen 1000
+	    inet6 2001:db8:acad:1:250:ff:fe00:700/64 scope global dynamic mngtmpaddr 
+	       valid_lft 2591862sec preferred_lft 604662sec
+	    inet6 fe80::250:ff:fe00:700/64 scope link 
+	       valid_lft forever preferred_lft forever
+	```
+
+	3. шлюзом по умолчанию назначен link-local адрес интерфейса маршрутизатора, подключенного к клиентской сети:
+
+	```
+	root@Linux1:~# ip -6 r
+	
+	::1 dev lo proto kernel metric 256 pref medium
+	
+	2001:db8:acad:1::/64 dev ens3 proto kernel metric 256 expires 2591949sec pref medium
+	
+	fe80::/64 dev ens3 proto kernel metric 256 pref medium
+	
+	default via fe80::1 dev ens3 proto ra metric 1024 expires 1749sec hoplimit 64 pref medium
+	```
+
+	4. с сервера DHCP получен суффикс доменного имени, а также IPv6-адрес DNS-сервера:
+
+	```
+	root@Linux1:~# cat /etc/resolv.conf 
+
+	search STATELESS.com.
+	nameserver 2001:db8:acad::254
+	```
+
+* Проверим доступность второй клиентской сети командой **PING** до IPv6-адреса маршрутизатора **`R2`**:
+
+	```
+	root@Linux1:~# ping6 -c 3 2001:db8:acad:3::1
+	
+	PING 2001:db8:acad:3::1(2001:db8:acad:3::1) 56 data bytes
+	64 bytes from 2001:db8:acad:3::1: icmp_seq=1 ttl=63 time=0.596 ms
+	64 bytes from 2001:db8:acad:3::1: icmp_seq=2 ttl=63 time=0.719 ms
+	64 bytes from 2001:db8:acad:3::1: icmp_seq=3 ttl=63 time=0.771 ms
+	
+	--- 2001:db8:acad:3::1 ping statistics ---
+	3 packets transmitted, 3 received, 0% packet loss, time 39ms
+	rtt min/avg/max/mdev = 0.596/0.695/0.771/0.076 ms
+	```
+
+### 4. Настройка и проверка DHCPv6-сервера с отслеживанием состояния на R1
+Настроим маршрутизатор **`R1`** для ответа на запросы DHCPv6 из локальной сети за маршрутизатором **`R2`**.
+
+* Создадим пул для второй клиентской сети:
+
+	```
+	R1(config)# ipv6 dhcp pool R2-STATEFUL
+	```
+
+* Назначим префикс адреса:
+
+	```
+	R1(config-dhcpv6)# address prefix 2001:db8:acad:3:aaa::/80
+	```
+
+* Зададим имя DNS-сервера и доменный суффикс:
+
+	```
+	R1(config-dhcpv6)# dns-server 2001:db8:acad::254
+	
+	R1(config-dhcpv6)# domain-name STATEFUL.com
+	```
+
+* На интерфейсе, подключенном в сеть с роутером **`R2`**, назначим DHCPv6-сервер с пулом R2-STATEFUL:
+
+	```
+	R1(config-dhcpv6)# int e0/1
+	
+	R1(config-if)# ipv6 dhcp server R2-STATEFUL
+	```
+
+
+### 5. Настройка и проверка DHCPv6 Relay на R2
+* Настроим на хосте **`Linux2`** сетевой интерфейс для использования протокола IPv6 в режиме получения настроек с DHCPv6-сервера с отслеживанием состояний (метод **`dhcp`**) и автоконфигурации SLAAC и (параметр **`autoconf 1`**):
+
+	```
+	root@Linux2:~# cat /etc/network/interfaces
+	......
+	allow-hotplug ens3
+	iface ens3 inet6 dhcp
+	accept_ra 1
+	autoconf 1
+	```
+
+* Проверим полученные настройки:
+
+	```
+	root@Linux2:~# ip -6 a
+	
+	1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 state UNKNOWN qlen 1000
+	    inet6 ::1/128 scope host 
+	       valid_lft forever preferred_lft forever
+	2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 state UP qlen 1000
+	    inet6 2001:db8:acad:3:250:ff:fe00:800/64 scope global dynamic mngtmpaddr 
+	       valid_lft 2591835sec preferred_lft 604635sec
+	    inet6 fe80::250:ff:fe00:800/64 scope link 
+	       valid_lft forever preferred_lft forever
+	```
+
+	```
+	root@Linux2:~# ip -6 r
+	
+	::1 dev lo proto kernel metric 256 pref medium
+	2001:db8:acad:3::/64 dev ens3 proto kernel metric 256 expires 2591924sec pref medium
+	fe80::/64 dev ens3 proto kernel metric 256 pref medium
+	default via fe80::1 dev ens3 proto ra metric 1024 expires 1724sec hoplimit 64 pref medium
+	```
+
+	видим, что адрес хоста сформирован префиксом сети **`2001:db8:acad:3::/64`**, установленном на маршрутизаторе **`R2`** на интерфейсе **`e0/1`** и идентификатор интерфейса сформирован методом EUI-64 - **`250:ff:fe00:800`**. А также шлюзом по умолчанию установлен link-local адрес маршрутизатора **`R2`** - **`fe80::1`**.
+
+* Настроим маршрутизатор **`R2`** в качестве агента DHCPv6-ретрансляции для второй клиентской сети:
+
+	```
+	R2(config)# int e0/1
+	
+	R2(config-if)# ipv6 nd managed-config-flag
+	
+	R2(config-if)# ipv6 dhcp relay destination fe80::1 Ethernet 0/0
+	```
+
+	Командой **`ipv6 nd managed-config-flag`** устанавим флаг **`M`** в сообщених **`RA`** протокола **`ICMPv6`**, чтобы клиенты для автоконфигурации IPv6 обращались на DHCPv6-сервер за всеми настройками, кроме шлюза по умолчанию, который по-прежнему берется клиентом из **`RA`**-сообщения маршрутизатора.
+
+	Командой **`ipv6 dhcp relay destination fe80::1 Ethernet 0/0`** включаем relay-агента на интерфейсе маршрутизатора в локальной сети, который будет пересылать запросы к DHCPv6-серверу из сети клиентов к указанному адресу DHCPv6-сервера (в данном случае - к маршрутизатору **`R1`**, используя его link-local-адрес, через свой интерфейс **`e0/0`**).
+
+* После перезагрузки **`Linux2`** проверим настройки, полученные от DHCPv6-сервера:
+
+	```
+	root@Linux2:~# ip -6 a
+	
+	1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 state UNKNOWN qlen 1000
+	    inet6 ::1/128 scope host 
+	       valid_lft forever preferred_lft forever
+	2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 state UP qlen 1000
+	    inet6 2001:db8:acad:3:aaa:b4b7:229e:3916/128 scope global 
+	       valid_lft forever preferred_lft forever
+	    inet6 2001:db8:acad:3:250:ff:fe00:800/64 scope global dynamic mngtmpaddr 
+	       valid_lft 2591945sec preferred_lft 604745sec
+	    inet6 fe80::250:ff:fe00:800/64 scope link 
+	       valid_lft forever preferred_lft forever
+	
+	root@Linux2:~# ip -6 r
+	
+	::1 dev lo proto kernel metric 256 pref medium
+	2001:db8:acad:3:aaa:b4b7:229e:3916 dev ens3 proto kernel metric 256 pref medium
+	2001:db8:acad:3::/64 dev ens3 proto kernel metric 256 expires 2591938sec pref medium
+	fe80::/64 dev ens3 proto kernel metric 256 pref medium
+	default via fe80::1 dev ens3 proto ra metric 1024 expires 1738sec hoplimit 64 pref medium
+	
+	root@Linux2:~# cat /etc/resolv.conf 
+	
+	search STATEFUL.com.
+	nameserver 2001:db8:acad::254
+	```
+
+	После того, как мы настроили relay-агента, наш клиент смог получить все параметры (кроме шлюза по умолчанию) от DHCPv6-сервера на маршрутизаторе **`R1`**. А именно: адрес получен с нужным префиксом, настроенным в пуле адресов для данной сети, также получены настройки DNS-сервера и суффикса доменного имени.
+
+	Информацию о выделенных адресах клиентам можно посмотреть с помощью команды:
+
+	```
+	R1# sh ipv6 dhcp binding
+	
+	Client: FE80::250:FF:FE00:800
+	  DUID: 000100012A267920005000000800
+	  Username : unassigned
+	  VRF : default
+	  IA NA: IA ID 0x00000800, T1 43200, T2 69120
+	    Address: 2001:DB8:ACAD:3:AAA:B4B7:229E:3916
+	            preferred lifetime 86400, valid lifetime 172800
+	            expires at May 31 2022 08:59 PM (170011 seconds)
+	```
+
+* Проверим доступность первой клиентской сети из второй, используя команду **`PING`** до адреса интерфейса маршрутизатора **`R1`** c клиента **`Linux2`**:
+
+	```
+	root@Linux2:~# ping6 2001:db8:acad:1::1
+	
+	PING 2001:db8:acad:1::1(2001:db8:acad:1::1) 56 data bytes
+	64 bytes from 2001:db8:acad:1::1: icmp_seq=1 ttl=63 time=0.668 ms
+	64 bytes from 2001:db8:acad:1::1: icmp_seq=2 ttl=63 time=0.989 ms
+	64 bytes from 2001:db8:acad:1::1: icmp_seq=3 ttl=63 time=0.831 ms
 	^C
-	--- 192.168.1.97 ping statistics ---
-	3 packets transmitted, 3 received, 0% packet loss, time 42ms
-	rtt min/avg/max/mdev = 0.437/0.605/0.725/0.124 ms
-	```
-
-	Здесь также интерфейс получил адрес автоматически из своего пула подсети C. Шлюз доступен.
-
-* Посотрим статистику DHCP-сервера:
-
-	```
-	R1# sh ip dhcp server statistics
-	
-	Memory usage         50283
-	Address pools        2
-	Database agents      0
-	Automatic bindings   2
-	Manual bindings      0
-	Expired bindings     0
-	Malformed messages   0
-	Secure arp entries   0
-	
-	Message              Received
-	BOOTREQUEST          0
-	DHCPDISCOVER         3
-	DHCPREQUEST          4
-	DHCPDECLINE          0
-	DHCPRELEASE          1
-	DHCPINFORM           0
-	
-	Message              Sent
-	BOOTREPLY            0
-	DHCPOFFER            3
-	DHCPACK              4
-	DHCPNAK              0
-	```
-
-	и выданные в аренду IP-адреса:
-
-	```
-	R1#sh ip dhcp binding
-	Bindings from all pools not associated with VRF:
-	IP address          Client-ID/              Lease expiration        Type
-	                    Hardware address/
-	                    User name
-	192.168.1.6         0050.0000.0100          May 19 2022 08:04 AM    Automatic
-	192.168.1.103       0050.0000.0200          May 18 2022 11:56 AM    Automatic
+	--- 2001:db8:acad:1::1 ping statistics ---
+	3 packets transmitted, 3 received, 0% packet loss, time 6ms
+	rtt min/avg/max/mdev = 0.668/0.829/0.989/0.133 ms
 	```
