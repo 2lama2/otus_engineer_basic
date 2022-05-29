@@ -146,6 +146,7 @@
 
 	```
 	R2# ping ipv6 fe80::1
+	
 	Output Interface: ethernet0/0
 	Type escape sequence to abort.
 	Sending 5, 100-byte ICMP Echos to FE80::1, timeout is 2 seconds:
