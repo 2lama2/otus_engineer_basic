@@ -3,6 +3,8 @@
 #### Топология
 ![[Pasted image 20220603230022.png]]
 
+![Pics](https://github.com/2lama2/otus_engineer_basic/blob/0918bf9f4066fec686c2c7ce890e01e34f66ee18/pics/Pasted%20image%2020220603230022.png)
+
 #### Таблица адресации
 <table>
 <thead>
